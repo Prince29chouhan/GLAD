@@ -80,7 +80,7 @@ while cap.isOpened():
                 # init_rect = [x, y, w, h]
                 # output_box = [count, x, y, w, h]
                 # output_boxes.append(output_box)
-                # # 画出边框和标签
+                # # Draw bounding box and label
                 # color = (255, 0, 0)
                 # cv2.rectangle(frame_show, (x - border1, y - border1), (x + w + border1, y + h + border1), color, border, lineType=cv2.LINE_AA)
                 # cv2.putText(frame_show, "Global MOD Detection Success", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, color, 2)
@@ -107,7 +107,7 @@ while cap.isOpened():
 
                     output_box = [count, x2 + x1, y2 + y1, w2, h2]
                     output_boxes.append(output_box)
-                    # 画出边框和标签
+                    # Draw bounding box and label
                     color = (255, 0, 0)
                     cv2.rectangle(frame_show, (x2 + x1 - border1, y2 + y1 - border1), (x2 + x1 + w2 + border1, y2 + y1 + h2 + border1), color,
                                   border, lineType=cv2.LINE_AA)
@@ -167,7 +167,7 @@ while cap.isOpened():
                 init_rect = [x2 + x1, y2 + y1, w2, h2]
                 output_box = [count, x2 + x1, y2 + y1, w2, h2]
                 output_boxes.append(output_box)
-                # 画出边框和标签
+                # Draw bounding box and label
                 color = (255, 0, 0)
                 cv2.rectangle(frame_show, (x2 + x1 - border1, y2 + y1 - border1), (x2 + x1 + w2 + border1, y2 + y1 + h2 + border1), color, border, lineType=cv2.LINE_AA)
                 cv2.putText(frame_show, "Local MOD Success", (600, 100), cv2.FONT_HERSHEY_SIMPLEX, 2, color, 2)

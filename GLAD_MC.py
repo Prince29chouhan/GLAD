@@ -76,7 +76,7 @@ for i in range(len(sets_test)):
 
                     x1, y1, w1, h1 = enlarge_region2(x, y, a, width, height)
 
-                    # 画出边框和标签
+                    # Draw the bounding box and label
                     color = (255, 0, 0)
                     cv2.rectangle(frame_show, (xleft, ytop), (xright, ybottom), color, border, lineType=cv2.LINE_AA)
 
@@ -149,7 +149,7 @@ for i in range(len(sets_test)):
                     xright = x2 + search_box_new[0][0] + w2
                     ybottom = y2 + search_box_new[0][1] + h2
 
-                    # 画出边框和标签
+                    # Draw the bounding box and label
                     color = (255, 0, 0)
                     cv2.rectangle(frame_show, (xleft, ytop), (xright, ybottom), color, border, lineType=cv2.LINE_AA)
                     cv2.rectangle(frame_show, (search_box_new[0][0], search_box_new[0][1]), (search_box_new[1][0], search_box_new[2][1]), (255, 255, 255), 2, lineType=cv2.LINE_AA)

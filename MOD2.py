@@ -13,15 +13,15 @@ def MOD2_global(frame1, frame2):
     width = frame1.shape[1]
     height = frame1.shape[0]
     blur_kernel = 11
-    prveFrame = cv2.GaussianBlur(frame1, (blur_kernel, blur_kernel), 0)  # 高斯模糊，用于去噪
-    prveFrame = cv2.cvtColor(prveFrame, cv2.COLOR_BGR2GRAY)  # 灰度化
+    prveFrame = cv2.GaussianBlur(frame1, (blur_kernel, blur_kernel), 0)  # Gaussian blur for denoising
+    prveFrame = cv2.cvtColor(prveFrame, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
 
     currentFame = cv2.GaussianBlur(frame2, (blur_kernel, blur_kernel), 0)
     currentFrame = cv2.cvtColor(currentFame, cv2.COLOR_BGR2GRAY)
 
     img_compensate, mask, avg_dist = motion_compensate(prveFrame, currentFrame)
 
-    # 计算当前帧与上一帧的差别
+    # Compute the difference between the current frame and the previous frame
     frameDiff = cv2.absdiff(currentFrame, img_compensate)
     fix_coef = np.mean(frameDiff)
     fix_coef = int(fix_coef)
@@ -32,15 +32,15 @@ def MOD2_global(frame1, frame2):
     thresh1 = thresh - mask
     thresh1 = cv2.medianBlur(thresh1, 5)
 
-    # 对阈值图像进行开操作，减少噪声
+    # Apply morphological opening on the thresholded image to reduce noise
     kernel1 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     open_demo = cv2.morphologyEx(thresh1, cv2.MORPH_OPEN, kernel1, iterations=1)
 
-    # 对开操作之后的图像做闭操作，减少孔洞，填充空隙
+    # Apply morphological closing after the opening to reduce holes and fill gaps
     kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
 
-    # 寻找目标轮廓
+    # Find target contours
     contours, hierarchy = cv2.findContours(close_demo.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     # images, contours, hierarchy, for MovingDrone conda envs
     rect_list = []
@@ -81,7 +81,7 @@ def MOD2_global(frame1, frame2):
         MOD_crop1 = currentFrame[y1:y1 + h1, x1:x1 + w1]
         MOD_crop2 = img_compensate[y1:y1 + h1, x1:x1 + w1]
 
-        # ShiTomasi corner detection的参数
+        # Parameters for Shi-Tomasi corner detection
         feature_params = dict(maxCorners=30, qualityLevel=0.15, minDistance=3, blockSize=3)
         lk_params = dict(winSize=(15, 15), maxLevel=3,
                          criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.03))
@@ -142,28 +142,28 @@ def MOD2_local(frame1, frame2, x_prev, y_prev):
     width = frame1.shape[1]
     height = frame1.shape[0]
     blur_kernel = 11
-    prveFrame = cv2.GaussianBlur(frame1, (blur_kernel, blur_kernel), 0)  # 高斯模糊，用于去噪
-    prveFrame = cv2.cvtColor(prveFrame, cv2.COLOR_BGR2GRAY)  # 灰度化
+    prveFrame = cv2.GaussianBlur(frame1, (blur_kernel, blur_kernel), 0)  # Gaussian blur for denoising
+    prveFrame = cv2.cvtColor(prveFrame, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
 
     currentFame = cv2.GaussianBlur(frame2, (blur_kernel, blur_kernel), 0)
     currentFrame = cv2.cvtColor(currentFame, cv2.COLOR_BGR2GRAY)
 
     img_compensate, mask, homo_inv = motion_compensate_local(prveFrame, currentFrame)
 
-    # 计算当前帧与上一帧的差别
+    # Compute the difference between the current frame and the previous frame
     frameDiff = cv2.absdiff(currentFrame, img_compensate)
     retVal, thresh = cv2.threshold(frameDiff, 4, 255, cv2.THRESH_BINARY)
     thresh1 = thresh - mask
 
-    # 对阈值图像进行开操作，减少噪声
+    # Apply morphological opening on the thresholded image to reduce noise
     kernel1 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     open_demo = cv2.morphologyEx(thresh1, cv2.MORPH_OPEN, kernel1, iterations=1)
 
-    # 对开操作之后的图像做闭操作，减少孔洞，填充空隙
+    # Apply morphological closing after the opening to reduce holes and fill gaps
     kernel2 = cv2.getStructuringElement(cv2.MORPH_RECT, (3, 3))
     close_demo = cv2.morphologyEx(open_demo, cv2.MORPH_CLOSE, kernel2, iterations=3)
 
-    # 寻找目标轮廓
+    # Find target contours
     contours, hierarchy = cv2.findContours(close_demo.copy(), cv2.RETR_LIST, cv2.CHAIN_APPROX_SIMPLE)
     # images, contours, hierarchy, for MovingDrone conda envs
     rect_list = []
@@ -204,7 +204,7 @@ def MOD2_local(frame1, frame2, x_prev, y_prev):
         MOD_crop1 = currentFrame[y1:y1 + h1, x1:x1 + w1]
         MOD_crop2 = img_compensate[y1:y1 + h1, x1:x1 + w1]
 
-        # ShiTomasi corner detection的参数
+        # Parameters for Shi-Tomasi corner detection
         feature_params = dict(maxCorners=30, qualityLevel=0.15, minDistance=3, blockSize=3)
         lk_params = dict(winSize=(15, 15), maxLevel=3,
                          criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.03))
