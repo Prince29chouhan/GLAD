@@ -5,35 +5,83 @@ Created on 2023/1/1
 @File : GLAD.py
 """
 
+import argparse
+import time
+from pathlib import Path
+
 import cv2
 import numpy as np
-import time
 
-from detector1_trt import Detector1
-from detector2_trt import Detector2
-from detector3_trt import Detector3
-import ctypes
-
+from detector_factory import (
+    DetectorConfigurationError,
+    available_backends,
+    build_detectors,
+)
 from MOD2 import MOD2_global
 from MOD2 import MOD2_local
 
 from Functions import enlarge_region2
 
-PLUGIN_LIBRARY = "./weights/libmyplugins.so"
-ctypes.CDLL(PLUGIN_LIBRARY)
-engine_file_path1 = './weights/yolov5s_GLAD.engine'
-engine_file_path2 = './weights/yolov5s_GLAD-crop.engine'
-detector1 = Detector1(engine_file_path1)
-detector2 = Detector2(engine_file_path2)
-detector3 = Detector3(engine_file_path2)
+
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Run the GLAD detector pipeline.")
+    parser.add_argument(
+        "--backend",
+        choices=available_backends(),
+        default="auto",
+        help="Detection backend to use (defaults to TensorRT when available).",
+    )
+    parser.add_argument(
+        "--weights-root",
+        default="weights",
+        help="Directory containing detector weight files (engines or .pt models).",
+    )
+    parser.add_argument(
+        "--global-model",
+        default="yolov5s_GLAD",
+        help="Model stem for the global detector weights.",
+    )
+    parser.add_argument(
+        "--local-model",
+        default="yolov5s_GLAD-crop",
+        help="Model stem for the local detector weights.",
+    )
+    parser.add_argument(
+        "--video",
+        default="phantom09",
+        help="Video name (without extension) to process.",
+    )
+    parser.add_argument(
+        "--video-root",
+        default="/home/user-guo/data/ARD-MAV/videos",
+        help="Directory containing the input videos.",
+    )
+    return parser.parse_args()
+
+
+args = _parse_args()
+
+try:
+    detectors = build_detectors(
+        args.backend,
+        global_model=args.global_model,
+        local_model=args.local_model,
+        weights_root=args.weights_root,
+    )
+except DetectorConfigurationError as error:
+    raise SystemExit(str(error)) from error
+
+detector1, detector2, detector3, backend_name = detectors
+print(f"Loaded {backend_name} detectors from {args.weights_root}")
 
 
 sets_ordinary = ['phantom09', 'phantom10', 'phantom30', 'phantom47', 'phantom70']
 sets_complex = ['phantom05', 'phantom08', 'phantom58', 'phantom65', 'phantom86']
 sets_small = ['phantom19', 'phantom41', 'phantom43', 'phantom46', 'phantom63']
 
-video_name = 'phantom09'
-cap = cv2.VideoCapture('/home/user-guo/data/ARD-MAV/videos/' + video_name + '.mp4')
+video_name = args.video
+video_root = Path(args.video_root)
+cap = cv2.VideoCapture(str(video_root / f"{video_name}.mp4"))
 
 count = 0
 flag = 0

@@ -56,6 +56,34 @@ pip install tensorrt==7.2.2.3
 After the Python packages finish installing, copy the shared library `libmyplugins.so` from the `weights/` directory into the
 same directory where you run the demos (or ensure it is discoverable via `LD_LIBRARY_PATH`).
 
+## CPU-only fallback (no GPU/TensorRT)
+
+If you cannot install the CUDA/TensorRT stack, the demos can now run on CPU by loading the YOLOv5 `.pt` checkpoints directly
+through PyTorch. Create a clean environment (Python 3.8 or newer is recommended) and install the following packages:
+
+```bash
+conda create --name glad-cpu python=3.10
+conda activate glad-cpu
+
+# PyTorch and TorchVision compiled for CPU only
+pip install torch==1.13.1+cpu torchvision==0.14.1+cpu --extra-index-url https://download.pytorch.org/whl/cpu
+
+# YOLOv5 helpers and image processing utilities
+pip install yolov5==7.0.12 opencv-python==4.8.0.76 pillow==10.0.0 numpy==1.23.5
+```
+
+With these packages installed you can launch the pipeline with the PyTorch backend:
+
+```bash
+python GLAD.py --backend torch --video-root /path/to/videos --video phantom09
+# or for the motion-compensated variant
+python GLAD_MC.py --backend torch --videos phantom09 phantom10
+```
+
+The scripts automatically fall back to the CPU backend when TensorRT is unavailable, but explicitly passing
+`--backend torch` makes the intent clear and produces an informative error message if PyTorch or the `yolov5` package is
+missing.
+
 ## Verify the installation
 
 Run the following checks inside the activated environment to confirm every dependency matches the expected version:
