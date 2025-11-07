@@ -1,36 +1,102 @@
+import argparse
+import time
+from pathlib import Path
+
 import cv2
 import numpy as np
-import time
 
-from detector1_trt import Detector1
-from detector2_trt import Detector2
-import ctypes
-
+from detector_factory import (
+    DetectorConfigurationError,
+    available_backends,
+    build_detectors,
+)
 from MOD2 import MOD2_global
 from MOD2 import MOD2_local
 from Functions import frame_stablize
 from Functions import enlarge_region2
 
 
-PLUGIN_LIBRARY = "./weights/libmyplugins.so"
-ctypes.CDLL(PLUGIN_LIBRARY)
-engine_file_path1 = './weights/yolov5s_DT-Drone2.engine'
-engine_file_path2 = './weights/yolov5s_DT-Drone2-crop.engine'
-detector1 = Detector1(engine_file_path1)
-detector2 = Detector2(engine_file_path2)
+def _parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(
+        description="Run the GLAD pipeline with motion compensation."
+    )
+    parser.add_argument(
+        "--backend",
+        choices=available_backends(),
+        default="auto",
+        help="Detection backend to use (defaults to TensorRT when available).",
+    )
+    parser.add_argument(
+        "--weights-root",
+        default="weights",
+        help="Directory containing detector weight files (engines or .pt models).",
+    )
+    parser.add_argument(
+        "--global-model",
+        default="yolov5s_DT-Drone2",
+        help="Model stem for the global detector weights.",
+    )
+    parser.add_argument(
+        "--local-model",
+        default="yolov5s_DT-Drone2-crop",
+        help="Model stem for the local detector weights.",
+    )
+    parser.add_argument(
+        "--video-root",
+        default="/home/user-guo/data/ARD-MAV/videos",
+        help="Directory containing the input videos.",
+    )
+    parser.add_argument(
+        "--videos",
+        nargs="+",
+        default=["phantom09"],
+        help="List of video names (without extension) to process.",
+    )
+    return parser.parse_args()
+
+
+args = _parse_args()
+
+try:
+    detectors = build_detectors(
+        args.backend,
+        global_model=args.global_model,
+        local_model=args.local_model,
+        weights_root=args.weights_root,
+    )
+except DetectorConfigurationError as first_error:
+    if args.global_model == "yolov5s_DT-Drone2" and args.local_model == "yolov5s_DT-Drone2-crop":
+        fallback_global = "yolov5s_GLAD"
+        fallback_local = "yolov5s_GLAD-crop"
+        print(
+            "Falling back to default GLAD weights because the DT-Drone2 weights"
+            f" are unavailable: {first_error}"
+        )
+        detectors = build_detectors(
+            args.backend,
+            global_model=fallback_global,
+            local_model=fallback_local,
+            weights_root=args.weights_root,
+        )
+    else:
+        raise SystemExit(str(first_error)) from first_error
+
+detector1, detector2, _, backend_name = detectors
+print(f"Loaded {backend_name} detectors from {args.weights_root}")
 
 sets_ordinary = ['phantom09', 'phantom10', 'phantom30', 'phantom47', 'phantom70']
 sets_complex = ['phantom05', 'phantom08', 'phantom58', 'phantom65', 'phantom86']
 sets_small = ['phantom19', 'phantom41', 'phantom43', 'phantom46', 'phantom63']
 
-sets_test = ['phantom09']
+sets_test = args.videos
+video_root = Path(args.video_root)
 
 border = 1
 
 for i in range(len(sets_test)):
     video_name = sets_test[i]
 
-    cap = cv2.VideoCapture('/home/user-guo/data/ARD-MAV/videos/' + video_name + '.mp4')
+    cap = cv2.VideoCapture(str(video_root / f"{video_name}.mp4"))
 
     count = 0
     flag = 0
@@ -76,7 +142,7 @@ for i in range(len(sets_test)):
 
                     x1, y1, w1, h1 = enlarge_region2(x, y, a, width, height)
 
-                    # 画出边框和标签
+                    # Draw the bounding box and label
                     color = (255, 0, 0)
                     cv2.rectangle(frame_show, (xleft, ytop), (xright, ybottom), color, border, lineType=cv2.LINE_AA)
 
@@ -149,7 +215,7 @@ for i in range(len(sets_test)):
                     xright = x2 + search_box_new[0][0] + w2
                     ybottom = y2 + search_box_new[0][1] + h2
 
-                    # 画出边框和标签
+                    # Draw the bounding box and label
                     color = (255, 0, 0)
                     cv2.rectangle(frame_show, (xleft, ytop), (xright, ybottom), color, border, lineType=cv2.LINE_AA)
                     cv2.rectangle(frame_show, (search_box_new[0][0], search_box_new[0][1]), (search_box_new[1][0], search_box_new[2][1]), (255, 255, 255), 2, lineType=cv2.LINE_AA)

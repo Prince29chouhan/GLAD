@@ -12,7 +12,7 @@ def motion_compensate(frame1, frame2):
     # grid-based KLT tracking
     lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.01))
 
-    # 创建随机生成的颜色
+    # Create randomly generated colors
     # color = np.random.randint(0, 255, (3000, 3))
 
     width = frame2.shape[1]
@@ -33,14 +33,14 @@ def motion_compensate(frame1, frame2):
 
     pts_cur, st, err = cv2.calcOpticalFlowPyrLK(frame1, frame2, pts_prev, None, **lk_params)
 
-    # 选择good points
-    good_new = pts_cur[st == 1]  # 当前帧中的跟踪点
-    good_old = pts_prev[st == 1]  # 前一帧中的跟踪点
+    # Select good points
+    good_new = pts_cur[st == 1]  # Tracked points in the current frame
+    good_old = pts_prev[st == 1]  # Tracked points in the previous frame
 
     points_new = []
     points_old = []
     motion_distance = []
-    # 绘制跟踪框
+    # Draw tracking boxes
     for i, (new, old) in enumerate(zip(good_new, good_old)):
         a, b = new.ravel()
         c, d = old.ravel()
@@ -66,10 +66,10 @@ def motion_compensate(frame1, frame2):
     # homography_matrix, status = cv2.findHomography(good_new, good_old, cv2.RANSAC, 3.0)
     # print('homography matrix:', homography_matrix)
 
-    # 根据变换矩阵计算变换之后的图像
+    # Warp the image using the transformation matrix
     compensated = cv2.warpPerspective(frame1, homography_matrix, (width, height), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
 
-    # 计算掩膜
+    # Compute the mask
     vertex = np.array([[0, 0], [width, 0], [width, height], [0, height]], dtype=np.float32).reshape(-1, 1, 2)
     homo_inv = np.linalg.inv(homography_matrix)
     vertex_trans = cv2.perspectiveTransform(vertex, homo_inv)
@@ -86,7 +86,7 @@ def motion_compensate_local(frame1, frame2):
     # grid-based KLT tracking
     lk_params = dict(winSize=(15, 15), maxLevel=3, criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 30, 0.03))
 
-    # 创建随机生成的颜色
+    # Create randomly generated colors
     # color = np.random.randint(0, 255, (3000, 3))
 
     width = frame2.shape[1]
@@ -107,19 +107,19 @@ def motion_compensate_local(frame1, frame2):
 
     pts_cur, st, err = cv2.calcOpticalFlowPyrLK(frame1, frame2, pts_prev, None, **lk_params)
 
-    # 选择good points
-    good_new = pts_cur[st == 1]  # 当前帧中的跟踪点
-    good_old = pts_prev[st == 1]  # 前一帧中的跟踪点
+    # Select good points
+    good_new = pts_cur[st == 1]  # Tracked points in the current frame
+    good_old = pts_prev[st == 1]  # Tracked points in the previous frame
     # print('local points num:', len(good_old))
     if len(good_old) < 18:
         homography_matrix = np.array([[0.999, 0, 0], [0, 0.999, 0], [0, 0, 1]])
     else:
         homography_matrix, status = cv2.findHomography(good_new, good_old, cv2.RANSAC, 3.0)
 
-    # 根据变换矩阵计算变换之后的图像
+    # Warp the image using the transformation matrix
     compensated = cv2.warpPerspective(frame1, homography_matrix, (width, height), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
 
-    # 计算掩膜
+    # Compute the mask
     vertex = np.array([[0, 0], [width, 0], [width, height], [0, height]], dtype=np.float32).reshape(-1, 1, 2)
     homo_inv = np.linalg.inv(homography_matrix)
     vertex_trans = cv2.perspectiveTransform(vertex, homo_inv)
@@ -135,8 +135,8 @@ def motion_compensate_local(frame1, frame2):
 def frame_stablize(frame1, frame2):
     # grid-based KLT tracking
     blur_kernel = 11
-    prevFrame = cv2.GaussianBlur(frame1, (blur_kernel, blur_kernel), 0)  # 高斯模糊，用于去噪
-    prevFrame = cv2.cvtColor(prevFrame, cv2.COLOR_BGR2GRAY)  # 灰度化
+    prevFrame = cv2.GaussianBlur(frame1, (blur_kernel, blur_kernel), 0)  # Gaussian blur for denoising
+    prevFrame = cv2.cvtColor(prevFrame, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
 
     currentFame = cv2.GaussianBlur(frame2, (blur_kernel, blur_kernel), 0)
     currentFrame = cv2.cvtColor(currentFame, cv2.COLOR_BGR2GRAY)
@@ -161,13 +161,13 @@ def frame_stablize(frame1, frame2):
 
     pts_cur, st, err = cv2.calcOpticalFlowPyrLK(prevFrame, currentFrame, pts_prev, None, **lk_params)
 
-    # 选择good points
-    good_new = pts_cur[st == 1]  # 当前帧中的跟踪点
-    good_old = pts_prev[st == 1]  # 前一帧中的跟踪点
+    # Select good points
+    good_new = pts_cur[st == 1]  # Tracked points in the current frame
+    good_old = pts_prev[st == 1]  # Tracked points in the previous frame
 
     points_new = []
     points_old = []
-    # 绘制跟踪框
+    # Draw tracking boxes
     for i, (new, old) in enumerate(zip(good_new, good_old)):
         a, b = new.ravel()
         c, d = old.ravel()
@@ -183,11 +183,11 @@ def frame_stablize(frame1, frame2):
     points_new = np.array(points_new)
     points_old = np.array(points_old)
 
-    # 根据透视变换矩阵计算变换之后的图像
+    # Warp the image using the perspective transformation matrix
     homography_matrix, status = cv2.findHomography(points_new, points_old, cv2.RANSAC, 3.0)
     img_compensate = cv2.warpPerspective(frame2, homography_matrix, (width, height), flags=cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP)
     homo_inv = np.linalg.inv(homography_matrix)
-    # # 使用仿射变换矩阵进行图像稳像
+    # # Stabilize the image using the affine transformation matrix
     # # Find affine transformation matrix
     # m, _ = cv2.estimateAffinePartial2D(points_new, points_old, maxIters=200, ransacReprojThreshold=3)
     #
@@ -207,7 +207,7 @@ def frame_stablize(frame1, frame2):
     # m[0, 2] = dx
     # m[1, 2] = dy
     #
-    # # 根据变换矩阵计算变换之后的图像
+    # # Warp the image using the transformation matrix
     # img_compensate = cv2.warpAffine(frame2, m, (width, height))
     # m_inv = np.linalg.inv(m)
 
@@ -291,17 +291,17 @@ def enlarge_region2(x, y, a, width, height):
 def cal_iou(box1, box2):
     """
 
-    :param box1: xywh 左上右下
+    :param box1: xywh (top-left corner with width and height)
     :param box2: xywh
     :transfer to xyxy
     """
     x1min, y1min, x1max, y1max = box1[0], box1[1], box1[0] + box1[2], box1[1] + box1[3]
     x2min, y2min, x2max, y2max = box2[0], box2[1], box2[0] + box2[2], box2[1] + box2[3]
-    # 计算两个框的面积
+    # Compute the area of the two boxes
     s1 = (y1max - y1min + 1.) * (x1max - x1min + 1.)
     s2 = (y2max - y2min + 1.) * (x2max - x2min + 1.)
 
-    # 计算相交部分的坐标
+    # Compute the coordinates of the intersection
     xmin = max(x1min, x2min)
     ymin = max(y1min, y2min)
     xmax = min(x1max, x2max)
@@ -313,15 +313,15 @@ def cal_iou(box1, box2):
     intersection = inter_h * inter_w
     union = s1 + s2 - intersection
 
-    # 计算iou
+    # Compute IoU
     iou = intersection / union
     return iou
 
 
 def cal_center_distance(box1, box2):
     """
-    计算两个box中心点的距离
-    :param box1: xyxy 左上右下
+    Calculate the distance between the centers of two boxes.
+    :param box1: xyxy (top-left and bottom-right)
     :param box2: xyxy
     :return:
     """
@@ -338,7 +338,7 @@ def dist(x1, y1, x2, y2):
 
 
 def rect_dist(x1, y1, w1, h1, x2, y2, w2, h2):
-    # 转化为左上角和右下角坐标
+    # Convert to top-left and bottom-right coordinates
     x1b = x1 + w1
     y1b = y1 + h1
     x2b = x2 + w2
@@ -371,11 +371,11 @@ def rect_dist(x1, y1, w1, h1, x2, y2, w2, h2):
 
 def two2one(x1, y1, w1, h1, x2, y2, w2, h2):
     """
-    将两个矩形框，变成一个更大的矩形框
-    input：两个矩形框，分别左上角和右下角坐标
-    return：融合后矩形框左上角和右下角坐标
+    Merge two rectangles into a larger rectangle.
+    Input: two rectangles represented by top-left corner plus width and height.
+    Return: the merged rectangle as top-left and bottom-right coordinates.
     """
-    # 转化为左上角和右下角坐标
+    # Convert to top-left and bottom-right coordinates
     x1b = x1 + w1
     y1b = y1 + h1
     x2b = x2 + w2
@@ -392,9 +392,9 @@ def two2one(x1, y1, w1, h1, x2, y2, w2, h2):
 def box_select(boxes1):
 
     """
-    多box，最终融合距离近的，留下新的，或未被融合的
-    input：多box的列表，例如：[[12,23,45,56],[36,25,45,63],[30,25,60,35]]
-    return：新的boxes，这里面返回的结果是这样的，被合并的box会置为[]，最终返回的，可能是这样[[],[],[50,23,65,50]]
+    Merge nearby boxes and keep either the merged boxes or the untouched ones.
+    Input: a list of boxes, e.g., [[12, 23, 45, 56], [36, 25, 45, 63], [30, 25, 60, 35]].
+    Return: the new boxes; merged boxes are set to [], so the result may look like [[], [], [50, 23, 65, 50]].
     """
 
     # print("boxes1:", boxes1)
